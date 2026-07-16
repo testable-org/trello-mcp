@@ -2,7 +2,7 @@
 
 A [Model Context Protocol](https://modelcontextprotocol.io) (MCP) server that connects [Trello](https://trello.com) to Claude Code. Manage your boards, lists, cards, checklists, and more — all through natural language.
 
-> **73 tools** | **Zero config startup** | **Auto-loads `.env`** | **Docker ready** | **Remote HTTP support**
+> **74 tools** | **Zero config startup** | **Auto-loads `.env`** | **Docker ready** | **Remote HTTP support**
 
 ---
 
@@ -240,7 +240,7 @@ Once connected, just ask Claude in natural language:
 | `add_board_member` | Add a member to a board with a role |
 | `remove_board_member` | Remove a member from a board |
 
-### Cards (20 tools)
+### Cards (21 tools)
 
 | Tool | Description |
 |------|-------------|
@@ -260,6 +260,7 @@ Once connected, just ask Claude in natural language:
 | `remove_member_from_card` | Unassign a member from a card |
 | `get_card_actions` | Get the activity feed for a card |
 | `list_attachments` | List all attachments on a card |
+| `get_attachment` | Download an image attachment and return it as image content |
 | `add_attachment` | Add a URL attachment to a card |
 | `delete_attachment` | Delete an attachment from a card |
 | `get_card_custom_fields` | Get custom field values for a card |

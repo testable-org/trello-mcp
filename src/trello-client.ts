@@ -119,4 +119,27 @@ export class TrelloClient {
   async delete<T>(path: string, params?: Record<string, string>): Promise<T> {
     return this.request<T>("DELETE", path, params);
   }
+
+  /**
+   * Fetch a binary resource (e.g. an attachment download URL). Trello's file-download
+   * endpoints reject the ?key=&token= query auth used everywhere else in this client
+   * (401 "unauthorized permission requested") and require an OAuth Authorization header.
+   */
+  async getBinary(url: string): Promise<{ data: Buffer; contentType: string }> {
+    const { apiKey, token } = this.getCredentials();
+    const response = await fetch(url, {
+      headers: {
+        Authorization: `OAuth oauth_consumer_key="${apiKey}", oauth_token="${token}"`,
+      },
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      throw new TrelloApiError(response.status, text, url);
+    }
+
+    const data = Buffer.from(await response.arrayBuffer());
+    const contentType = response.headers.get("content-type") ?? "application/octet-stream";
+    return { data, contentType };
+  }
 }

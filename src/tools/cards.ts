@@ -1,8 +1,10 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import * as z from "zod/v4";
 import { TrelloClient } from "../trello-client.js";
-import { textResult, handleToolError } from "../utils/response.js";
+import { textResult, errorResult, handleToolError } from "../utils/response.js";
 import type { TrelloCard, TrelloAction, TrelloAttachment, TrelloCustomFieldItem } from "../types.js";
+
+const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
 
 export function register(server: McpServer, client: TrelloClient) {
   server.registerTool(
@@ -416,6 +418,51 @@ export function register(server: McpServer, client: TrelloClient) {
           { fields: "id,name,url,bytes,date,mimeType,isUpload,pos" },
         );
         return textResult(attachments);
+      } catch (err) {
+        return handleToolError(err);
+      }
+    },
+  );
+
+  server.registerTool(
+    "get_attachment",
+    {
+      title: "Get Attachment",
+      description:
+        "Download an image attachment from a Trello card and return it as image content. Only image attachments are supported.",
+      inputSchema: z.object({
+        cardId: z.string().describe("The ID of the card"),
+        attachmentId: z.string().describe("The ID of the attachment to download"),
+      }),
+    },
+    async ({ cardId, attachmentId }) => {
+      try {
+        const attachment = await client.get<TrelloAttachment>(
+          `/cards/${cardId}/attachments/${attachmentId}`,
+        );
+        if (!attachment.mimeType?.startsWith("image/")) {
+          return errorResult(
+            `Attachment "${attachment.name}" has mime type "${attachment.mimeType ?? "unknown"}", ` +
+            `which is not an image. This tool only downloads image attachments.`,
+          );
+        }
+        if (attachment.bytes && attachment.bytes > MAX_ATTACHMENT_BYTES) {
+          return errorResult(
+            `Attachment "${attachment.name}" is ${attachment.bytes} bytes, which exceeds the ` +
+            `${MAX_ATTACHMENT_BYTES}-byte limit for this tool.`,
+          );
+        }
+
+        const { data, contentType } = await client.getBinary(attachment.url);
+        return {
+          content: [
+            {
+              type: "image" as const,
+              data: data.toString("base64"),
+              mimeType: contentType.split(";")[0] || attachment.mimeType,
+            },
+          ],
+        };
       } catch (err) {
         return handleToolError(err);
       }
